@@ -27,4 +27,22 @@ jobs:
       # Upload a file to AWS s3
       - name:  Copy index.html to s3
         run: |
+          aws s3api put-bucket-versioning \
+            --bucket "${{ env.BUCKET_NAME }}" \
+            --versioning-configuration Status=Enabled \
+            --region "${{ env.AWS_REGION }}"
+
+          aws s3api put-bucket-ownership-controls \
+            --bucket ${{ENV.BUCKET_NAME}} \
+            --ownership-controls '{
+                "Rules": [
+                {
+                    "ObjectOwnership": "BucketOwnerPreferred"
+                }
+                ]
+            }'
+
+          aws s3api get-bucket-ownership-controls --bucket ${{ENV.BUCKET_NAME}} --region ${{ env.AWS_REGION }}
           aws s3 cp ./index.html s3://${{ env.BUCKET_NAME }}/index.html --region ${{ env.AWS_REGION }}
+          aws s3 ls s3://${{ env.BUCKET_NAME }}/index.html --region ${{ env.AWS_REGION }} --acl public-read
+
