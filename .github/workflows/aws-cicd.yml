@@ -9,8 +9,8 @@ env:
   AWS_REGION: "ap-south-1"
 
 permissions:
-  id-token: write   # Required for requesting the JWT via OIDC
-  contents: read    # Required by actions/checkout
+  id-token: write   # Required for OIDC JWT retrieval
+  contents: read    # Required for repository checkout
 
 jobs:
   deploy:
@@ -39,28 +39,22 @@ jobs:
 
       - name: Terraform Apply
         id: terraform_apply
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -no-color
 
       - name: Get S3 Bucket Name from Terraform Output
         id: get_bucket
         run: |
-          # Run terraform output with no color and capture the output to a variable.
-          RAW_OUTPUT=$(terraform output -raw bucket_name -no-color)
-          # Filter out any lines that include debug messages and pick the last line as the bucket name.
-          BUCKET_NAME=$(echo "$RAW_OUTPUT" | grep -v "::debug::" | tail -n 1)
+          # Capture the output from Terraform.
+          BUCKET_NAME=$(terraform output -raw bucket_name -no-color | grep -v "::debug::" | tail -n1)
           echo "Bucket name is: $BUCKET_NAME"
-          # Write the bucket name to the GitHub Actions environment file
-          echo "BUCKET_NAME=${BUCKET_NAME}" >> $GITHUB_ENV
+          # Set the step output for use in later steps.
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
         shell: bash
-
-      - name: Show Bucket Name
-        run: echo "S3 Bucket is $BUCKET_NAME"
 
       - name: Upload index.html to S3
         run: |
-          # Upload the index.html file to S3. Ensure that the index.html file is present in your repository.
-          aws s3 cp ./index.html s3://$BUCKET_NAME/index.html --region ${{ env.AWS_REGION }}
-
+          echo "Uploading index.html to S3 bucket: ${{ steps.get_bucket.outputs.bucket_name }}"
+          aws s3 cp ./index.html s3://${{ steps.get_bucket.outputs.bucket_name }}/index.html --region ${{ env.AWS_REGION }}
 
 
 # # Sample workflow to access AWS resources when workflow is tied to branch
