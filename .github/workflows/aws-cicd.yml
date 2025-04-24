@@ -41,24 +41,22 @@ jobs:
         id: terraform_apply
         run: terraform apply -auto-approve -no-color
 
-        - name: Get S3 Bucket Name from Terraform Output
+      - name: Get S3 Bucket Name from Terraform Output
         id: get_bucket
         run: |
           # Disable bash command echoing
           set +x
-          # Set Terraform automation flag to get cleaner output.
+          # Set Terraform automation flag for cleaner output.
           export TF_IN_AUTOMATION=1
-          # Capture the raw output from Terraform
+          # Capture the raw output from Terraform.
           BUCKET_OUTPUT=$(terraform output -raw bucket_name -no-color)
           echo "Raw Terraform output: $BUCKET_OUTPUT"
-          # Use sed to remove lines starting with [command] or containing ::debug::
+          # Remove lines starting with [command] or containing ::debug:: and get the first line.
           BUCKET_NAME=$(echo "$BUCKET_OUTPUT" | sed -e '/^\[command\]/d' -e '/::debug::/d' | head -n 1)
           echo "Bucket name is: ${BUCKET_NAME}"
-          # Set the step output for later steps
+          # Set the step output for later steps.
           echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
         shell: bash
-        outputs:
-          bucket_name: ${{ steps.get_bucket.outputs.bucket_name }}
 
       - name: Upload index.html to S3
         run: |
