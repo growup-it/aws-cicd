@@ -1,0 +1,54 @@
+name: Terraform AWS Parameter Store
+# This workflow allows you to apply or destroy Terraform configurations based on user input.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Choose the action: apply or destroy'
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+
+env:
+  AWS_REGION: "ap-south-1"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.3.0 # Specify your Terraform version
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
+            audience: sts.amazonaws.com
+            aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply or Destroy
+        run: |
+          if [ "${{ github.event.inputs.action }}" == "apply" ]; then
+            terraform apply tfplan -auto-approve
+          elif [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+            terraform destroy -auto-approve
+          fi
+
+      - name: Terraform Output
+        run: terraform output -json
