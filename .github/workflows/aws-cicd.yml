@@ -1,48 +1,105 @@
-# Sample workflow to access AWS resources when workflow is tied to branch
-# The workflow Creates static website using aws s3
-name: AWS workflow
+name: AWS Workflow with Terraform & S3 Upload
+
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+
 env:
-  BUCKET_NAME : "githubsample-64537323"
-  AWS_REGION : "ap-south-1"
-# permission can be added at job level or workflow level
+  AWS_REGION: "ap-south-1"
+
 permissions:
-  id-token: write   # This is required for requesting the JWT
-  contents: read    # This is required for actions/checkout
+  id-token: write   # Required for requesting the JWT via OIDC
+  contents: read    # Required by actions/checkout
+
 jobs:
-  S3PackageUpload:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Git clone the repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: configure aws credentials
+      - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
           audience: sts.amazonaws.com
           aws-region: ${{ env.AWS_REGION }}
-      # Upload a file to AWS s3
-      - name:  Copy index.html to s3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.3.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        id: terraform_apply
+        run: terraform apply -auto-approve
+
+      - name: Get S3 Bucket Name from Terraform Output
+        id: get_bucket
+        run: echo "BUCKET_NAME=$(terraform output -raw bucket_name)" >> $GITHUB_ENV
+
+      - name: Show Bucket Name
+        run: echo "S3 Bucket is $BUCKET_NAME"
+
+      - name: Upload index.html to S3
         run: |
-          aws s3api put-bucket-versioning \
-            --bucket "${{ env.BUCKET_NAME }}" \
-            --versioning-configuration Status=Enabled \
-            --region "${{ env.AWS_REGION }}"
+          # Upload the index.html file to S3. Ensure that the index.html file is present in your repository.
+          aws s3 cp ./index.html s3://$BUCKET_NAME/index.html --region ${{ env.AWS_REGION }}
 
-          aws s3api put-bucket-ownership-controls \
-            --bucket ${{ENV.BUCKET_NAME}} \
-            --ownership-controls '{
-                "Rules": [
-                {
-                    "ObjectOwnership": "BucketOwnerPreferred"
-                }
-                ]
-            }'
 
-          aws s3api get-bucket-ownership-controls --bucket ${{ENV.BUCKET_NAME}} --region ${{ env.AWS_REGION }}
-        #   aws s3 cp ./index.html s3://${{ env.BUCKET_NAME }}/index.html --region ${{ env.AWS_REGION }}
-        #   aws s3 ls s3://${{ env.BUCKET_NAME }}/index.html --region ${{ env.AWS_REGION }} --acl public-read
+
+# # Sample workflow to access AWS resources when workflow is tied to branch
+# # The workflow Creates static website using aws s3
+# name: AWS workflow
+# on:
+#   push:
+#     branches: [ "main" ]
+# env:
+#   BUCKET_NAME : "githubsample-64537323"
+#   AWS_REGION : "ap-south-1"
+# # permission can be added at job level or workflow level
+# permissions:
+#   id-token: write   # This is required for requesting the JWT
+#   contents: read    # This is required for actions/checkout
+# jobs:
+#   S3PackageUpload:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Git clone the repository
+#         uses: actions/checkout@v4
+
+#       - name: configure aws credentials
+#         uses: aws-actions/configure-aws-credentials@v1
+#         with:
+#           role-to-assume: arn:aws:iam::127214183072:role/aws-git-oidc
+#           audience: sts.amazonaws.com
+#           aws-region: ${{ env.AWS_REGION }}
+#       # Upload a file to AWS s3
+#       - name:  Copy index.html to s3
+#         run: |
+#           aws s3api put-bucket-versioning \
+#             --bucket "${{ env.BUCKET_NAME }}" \
+#             --versioning-configuration Status=Enabled \
+#             --region "${{ env.AWS_REGION }}"
+
+#           aws s3api put-bucket-ownership-controls \
+#             --bucket ${{ENV.BUCKET_NAME}} \
+#             --ownership-controls '{
+#                 "Rules": [
+#                 {
+#                     "ObjectOwnership": "BucketOwnerPreferred"
+#                 }
+#                 ]
+#             }'
+
+#           aws s3api get-bucket-ownership-controls --bucket ${{ENV.BUCKET_NAME}} --region ${{ env.AWS_REGION }}
+#         #   aws s3 cp ./index.html s3://${{ env.BUCKET_NAME }}/index.html --region ${{ env.AWS_REGION }}
+#         #   aws s3 ls s3://${{ env.BUCKET_NAME }}/index.html --region ${{ env.AWS_REGION }} --acl public-read
 
