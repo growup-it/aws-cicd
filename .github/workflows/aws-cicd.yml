@@ -44,17 +44,19 @@ jobs:
       - name: Get S3 Bucket Name from Terraform Output
         id: get_bucket
         run: |
-          # Disable bash command echoing
+          # Disable bash command echoing so only command output is captured
           set +x
           # Set Terraform automation flag for cleaner output.
           export TF_IN_AUTOMATION=1
-          # Capture the raw output from Terraform.
-          BUCKET_OUTPUT=$(terraform output -raw bucket_name -no-color)
+          # Capture the raw output from Terraform while redirecting error output.
+          BUCKET_OUTPUT=$(terraform output -raw bucket_name -no-color 2>/dev/null)
           echo "Raw Terraform output: $BUCKET_OUTPUT"
-          # Remove lines starting with [command] or containing ::debug:: and get the first line.
-          BUCKET_NAME=$(echo "$BUCKET_OUTPUT" | sed -e '/^\[command\]/d' -e '/::debug::/d' | head -n 1)
+          # Extract the line that starts with "my-static-site" (adjust if your naming is different)
+          RAW_BUCKET_LINE=$(echo "$BUCKET_OUTPUT" | grep '^my-static-site' | head -n 1)
+          # Extract the bucket name by taking the part before any "::" or colon character.
+          BUCKET_NAME=$(echo "$RAW_BUCKET_LINE" | cut -d ':' -f1)
           echo "Bucket name is: ${BUCKET_NAME}"
-          # Set the step output for later steps.
+          # Save the bucket name as the step output for later steps.
           echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
         shell: bash
 
