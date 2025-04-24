@@ -10,7 +10,7 @@ env:
 
 permissions:
   id-token: write   # Required for OIDC JWT retrieval
-  contents: read    # Required for repository checkout
+  contents: read     # Required for repository checkout
 
 jobs:
   deploy:
@@ -57,13 +57,15 @@ jobs:
           # Set the step output for later steps
           echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
         shell: bash
-       Outputs:
-        bucket_name: ${{ steps.get_bucket.outputs.bucket_name }}
+       outputs:
+       bucket_name: ${{ steps.get_bucket.outputs.bucket_name }}
 
       - name: Upload index.html to S3
         run: |
           echo "Uploading index.html to S3 bucket: ${{ steps.get_bucket.outputs.bucket_name }}"
           aws s3 cp ./index.html s3://${{ steps.get_bucket.outputs.bucket_name }}/index.html --region ${{ env.AWS_REGION }}
+
+
 
 
 # # Sampl e workflow to access AWS resources when workflow is tied to branch
