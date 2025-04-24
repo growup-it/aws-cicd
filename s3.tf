@@ -32,13 +32,23 @@ resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
-# Create the S3 bucket without setting ACL (since BucketOwnerEnforced is enabled by default)
+# Create the S3 bucket without setting ACL to avoid conflict with object ownership
 resource "aws_s3_bucket" "static_site" {
   bucket = "${var.bucket_name_prefix}-${random_id.bucket_suffix.hex}"
 
   tags = {
     Name = "Static Website Bucket"
   }
+}
+
+# Disable default block public access settings to allow public policies
+resource "aws_s3_bucket_public_access_block" "public_access" {
+  bucket = aws_s3_bucket.static_site.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
 }
 
 # Configure the bucket for static website hosting using a separate resource (recommended)
