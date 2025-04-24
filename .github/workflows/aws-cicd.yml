@@ -44,8 +44,10 @@ jobs:
       - name: Get S3 Bucket Name from Terraform Output
         id: get_bucket
         run: |
-          # Run terraform output without color and capture only the raw output
-          BUCKET_NAME=$(terraform output -raw bucket_name -no-color)
+          # Run terraform output with no color and capture the output to a variable.
+          RAW_OUTPUT=$(terraform output -raw bucket_name -no-color)
+          # Filter out any lines that include debug messages and pick the last line as the bucket name.
+          BUCKET_NAME=$(echo "$RAW_OUTPUT" | grep -v "::debug::" | tail -n 1)
           echo "Bucket name is: $BUCKET_NAME"
           # Write the bucket name to the GitHub Actions environment file
           echo "BUCKET_NAME=${BUCKET_NAME}" >> $GITHUB_ENV
