@@ -41,7 +41,7 @@ jobs:
         id: terraform_apply
         run: terraform apply -auto-approve -no-color
 
-      - name: Get S3 Bucket Name from Terraform Output
+        - name: Get S3 Bucket Name from Terraform Output
         id: get_bucket
         run: |
           # Disable bash command echoing
@@ -57,8 +57,8 @@ jobs:
           # Set the step output for later steps
           echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
         shell: bash
-       outputs:
-       bucket_name: ${{ steps.get_bucket.outputs.bucket_name }}
+        outputs:
+          bucket_name: ${{ steps.get_bucket.outputs.bucket_name }}
 
       - name: Upload index.html to S3
         run: |
