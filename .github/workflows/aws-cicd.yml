@@ -44,11 +44,12 @@ jobs:
       - name: Get S3 Bucket Name from Terraform Output
         id: get_bucket
         run: |
-          # Capture the output from Terraform.
-          BUCKET_NAME=$(terraform output -raw bucket_name -no-color | grep -v "::debug::" | tail -n1)
-          echo "Bucket name is: $BUCKET_NAME"
+          # Disable command echo so that only the command output is captured
+          set +x
+          BUCKET_NAME=$(terraform output -raw bucket_name -no-color)
+          echo "Bucket name is: ${BUCKET_NAME}"
           # Set the step output for use in later steps.
-          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+          echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Upload index.html to S3
@@ -57,7 +58,7 @@ jobs:
           aws s3 cp ./index.html s3://${{ steps.get_bucket.outputs.bucket_name }}/index.html --region ${{ env.AWS_REGION }}
 
 
-# # Sample workflow to access AWS resources when workflow is tied to branch
+# # Sampl e workflow to access AWS resources when workflow is tied to branch
 # # The workflow Creates static website using aws s3
 # name: AWS workflow
 # on:
