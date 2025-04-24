@@ -15,9 +15,8 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Variables can be customized via a terraform.tfvars file or CLI
 variable "aws_region" {
-  description = "AWS Region"
+  description = "AWS Region to deploy resources"
   type        = string
   default     = "ap-south-1"
 }
@@ -33,26 +32,29 @@ resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
-# Create the S3 bucket configured for static website hosting
+# Create the S3 bucket without setting ACL (since BucketOwnerEnforced is enabled by default)
 resource "aws_s3_bucket" "static_site" {
-  # Dynamically generate the bucket name by combining a prefix and a random suffix.
   bucket = "${var.bucket_name_prefix}-${random_id.bucket_suffix.hex}"
-
-  # Set ACL to public-read. Note: for S3 website hosting and public read,
-  # you will also need to attach a bucket policy, which is attached below.
-  acl    = "public-read"
-
-  website {
-    index_document = "index.html"
-    error_document = "error.html"
-  }
 
   tags = {
     Name = "Static Website Bucket"
   }
 }
 
-# Data source for building the bucket policy document.
+# Configure the bucket for static website hosting using a separate resource (recommended)
+resource "aws_s3_bucket_website_configuration" "static_site" {
+  bucket = aws_s3_bucket.static_site.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "error.html"
+  }
+}
+
+# Create a bucket policy to allow public read access on the objects within the bucket
 data "aws_iam_policy_document" "public_read_policy" {
   statement {
     sid       = "PublicReadGetObject"
@@ -68,13 +70,12 @@ data "aws_iam_policy_document" "public_read_policy" {
   }
 }
 
-# Attach the public read bucket policy
 resource "aws_s3_bucket_policy" "public_policy" {
   bucket = aws_s3_bucket.static_site.id
   policy = data.aws_iam_policy_document.public_read_policy.json
 }
 
-# Output the bucket name dynamically
+# Output the dynamically generated S3 bucket name
 output "bucket_name" {
   description = "The name of the S3 bucket created for static website hosting."
   value       = aws_s3_bucket.static_site.bucket
