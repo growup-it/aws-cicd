@@ -58,10 +58,6 @@ resource "aws_s3_bucket_website_configuration" "static_site" {
   index_document {
     suffix = "index.html"
   }
-
-  error_document {
-    key = "error.html"
-  }
 }
 
 # Create a bucket policy to allow public read access on the objects within the bucket
