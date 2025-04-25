@@ -15,6 +15,10 @@ on:
 env:
   AWS_REGION: "ap-south-1"
 
+permissions:
+  id-token: write   # Required for OIDC JWT retrieval
+  contents: read     # Required for repository checkout
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
