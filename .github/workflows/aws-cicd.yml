@@ -12,7 +12,7 @@ name: AWS Workflow with Terraform & S3 Upload
 on:
   pull_request:
     branches:
-      - main
+      - mains 
     types: [closed] # Trigger on pull request closed event
   workflow_dispatch: # Allows manual triggering of the workflow
 
