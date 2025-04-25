@@ -25,6 +25,7 @@ variable "bucket_name_prefix" {
   description = "Prefix for the S3 bucket name"
   type        = string
   default     = "my-static-site"
+
 }
 
 # Generate a random suffix to ensure bucket name uniqueness
@@ -35,6 +36,7 @@ resource "random_id" "bucket_suffix" {
 # Create the S3 bucket without setting ACL to avoid conflict with object ownership
 resource "aws_s3_bucket" "static_site" {
   bucket = "${var.bucket_name_prefix}-${random_id.bucket_suffix.hex}"
+  force_destroy = true # Allow bucket to be destroyed even if it contains objects
 
   tags = {
     Name = "Static Website Bucket"
